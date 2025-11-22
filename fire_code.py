@@ -56,9 +56,17 @@ def init_port(port_name):
     global FIRE_PORT
     FIRE_PORT = mido.open_output(port_name)
     #clear all pads
+    clear_pads()
+
+def clear_pads():
     send_midi_cc(FIRE_PORT, 0x7f, 0x00, channel=0)
     for pad in range(PADSTART, PADEND):
         set_pad_color(pad, 0x000000)
+
+def cose_port():
+    global FIRE_PORT
+    clear_pads()
+    FIRE_PORT.close()
 
 def send_midi_cc(port, control, value, channel=0):
     """

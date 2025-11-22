@@ -340,6 +340,7 @@ def main():
 
     except KeyboardInterrupt:
         print("\nExiting cleanly...")
+        fc.clear_pads()
 
     finally:
         if hasattr(fc, "close_port"):
