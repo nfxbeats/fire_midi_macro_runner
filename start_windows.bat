@@ -28,7 +28,9 @@ rem Check if Python is available
 set PYTHON_CHECK=!ERRORLEVEL!
 if !PYTHON_CHECK! neq 0 (
     echo Python is not installed or not in your PATH.
-    echo Please install Python 3.6+ and run setup_environment.bat before trying again.
+    echo .
+    echo Please install Python 3.6+ and run setup_windows.bat before trying again.
+    echo .
     pause
     exit /b 1
 )
@@ -39,7 +41,7 @@ set MODULE_ERROR=!ERRORLEVEL!
 if !MODULE_ERROR! neq 0 (
     echo Required Python modules are missing.
     echo .
-    echo Please run setup_env.bat first to set up the environment.
+    echo Please run setup_windows.bat first to set up the environment.
     echo .
     pause
     exit /b 1

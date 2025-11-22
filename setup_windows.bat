@@ -99,7 +99,7 @@ echo Your virtual environment has been created and all
 echo required dependencies have been installed.
 echo.
 echo You can now run the program using:
-echo   run_fire_midi_macro_runner.bat
+echo   start_windows.bat
 echo ===================================================
 echo.
 
