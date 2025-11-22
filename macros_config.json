@@ -1,0 +1,32 @@
+{
+  "default_color": "0xFFFFFF",
+  "control_macros": {
+    "50": "previous track",
+    "51": "play/pause",  
+    "52": "next track",
+    "53": "volume mute", 
+
+    "54": { "action": "esc", "color": "0xFFFFFF" },
+    "58": { "action": "f1", "color": "0xFF0000" },
+    "59": { "action": "f2", "color": "0xFF6000" },
+    "60": { "action": "f3", "color": "0xFFA000" },
+    "61": { "action": "f4", "color": "0xFFFF00" },
+    "62": { "action": "f5", "color": "0xA0FF00" },
+    "63": { "action": "f6", "color": "0x00FF00" },
+    "64": { "action": "f7", "color": "0x00FFA0" },
+    "65": { "action": "f8", "color": "0x00FFFF" },
+    "66": { "action": "f9", "color": "0x00A0FF" },
+    "67": { "action": "f10", "color": "0x0000FF" },
+    "68": { "action": "f11", "color": "0xA000FF" },
+    "69": { "action": "f12", "color": "0xFF00FF" },
+
+    "102": { "action": "RUN|C:/Program Files/VideoLAN/VLC/vlc.exe", "color": "0x00FFFF" },
+    "103": { "action": "RUN|notepad", "color": "0xFF00FF" },
+    "104": { "action": "RUN|https://warbeats.com", "color": "0x00FF00" },
+    "105": { "action": "TYPE|you@youremail.com", "color": "0xFFFF00" },
+
+    "101": { "action": "volume up", "color": "0xFFFFFF" },
+    "117": { "action": "volume down", "color": "0x333333" }
+
+  }
+}
