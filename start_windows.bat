@@ -38,7 +38,9 @@ rem Check if required modules are installed
 set MODULE_ERROR=!ERRORLEVEL!
 if !MODULE_ERROR! neq 0 (
     echo Required Python modules are missing.
-    echo Please run setup_environment.bat first to set up the environment.
+    echo .
+    echo Please run setup_env.bat first to set up the environment.
+    echo .
     pause
     exit /b 1
 )
