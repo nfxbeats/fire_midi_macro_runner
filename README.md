@@ -29,12 +29,22 @@ This is particularly useful for:
 
 ## Installation
 
+### Easy Windows Installation
+1. Download the main zip file from: [Fire MIDI Macro Runner Main ZIP file](https://github.com/nfxbeats/fire_midi_macro_runner/archive/refs/heads/main.zip)
+2. Unzip the files into a folder of your choice.
+3. Run `setup_windows.bat` to set up the libraries the first time (only needs to run once)
+4. Run `start_windows.bat` to start the program after the libraries are installed.
+
+### Manual Installation
+
 1. Clone or download this repository
-2. Install required packages:
+2. Optional - Set up a new virtual environment
+3. Install required packages:
 
 ```
 pip install -r requirements.txt
 ```
+4. run `python fire_midi_macro_runner.py`
 
 ## Configuration
 
