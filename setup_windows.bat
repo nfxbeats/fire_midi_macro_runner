@@ -81,9 +81,12 @@ call venv\Scripts\activate.bat
 :install_deps
 echo.
 echo Installing required dependencies...
-python -m pip install --quiet --upgrade pip
+python -m pip install --upgrade pip
 echo Installing required packages...
-python -m pip install --quiet -r requirements.txt
+
+echo.
+echo Installing requirements:
+python -m pip install -r requirements.txt
 
 if !ERRORLEVEL! neq 0 (
     echo Failed to install dependencies.

@@ -36,7 +36,7 @@ if !PYTHON_CHECK! neq 0 (
 )
 
 rem Check if required modules are installed
-%PYTHON_CMD% -c "import mido, keyboard, rtmidi" >nul 2>&1
+%PYTHON_CMD% -c "import mido, keyboard, rtmidi, playsound3" >nul 2>&1
 set MODULE_ERROR=!ERRORLEVEL!
 if !MODULE_ERROR! neq 0 (
     echo Required Python modules are missing.

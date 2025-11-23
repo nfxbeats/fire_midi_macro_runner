@@ -29,6 +29,7 @@ This is particularly useful for:
   - `mido`
   - `keyboard`
   - `python-rtmidi`
+  - `playsound3`
 
 ## Installation
 
@@ -47,7 +48,7 @@ This is particularly useful for:
 ```
 pip install -r requirements.txt
 ```
-4. run `python fire_midi_macro_runner.py`
+4. Run `python fire_midi_macro_runner.py`
 
 ## Configuration
 
@@ -55,7 +56,7 @@ pip install -r requirements.txt
 
 The first time you run the application, it will prompt you to select your MIDI device from a list of available devices. This selection is saved in `midi_config.json` for future use. Delete this file to be prompted again.
 
-If you do not select an Akai Fire, you should replace the `import fire_code as fc` line to `import gen_code as fc` inside fire_midi_macro_runner.py 
+If you do not select an Akai Fire, you should replace the `import fire_code as fc` line to `import gen_code as fc` inside fire_midi_macro_runner.py and remove the existing defined actions from `macros_config.json` and build your own based off the MIDI controller IDs from your device.
 
 ### Macro Configuration
 
@@ -73,6 +74,8 @@ Edit `macros_config.json` to customize your pad mappings:
     "70": { "action": "RUN|C:/Program Files/VideoLAN/VLC/vlc.exe", "color": "0x00FFFF" },  // Launch VLC media player
     "71": { "action": "RUN|notepad", "color": "0xFF00FF" },                                // Open Notepad
     "72": { "action": "RUN|https://warbeats.com", "color": "0x00FF00" },                   // Open URL in browser
+
+    "109": { "action": "SOUND|./sounds/air_horn.wav", "color": "0xFF0000" },               // play a sound
 
     "105": { "action": "TYPE|you@youremail.com", "color": "0xFFFF00" }                     // type a text string
   }
@@ -124,6 +127,10 @@ You can also launch applications or open URLs by prefixing your command with `RU
 - File path to executable: `"RUN|C:/Program Files/VideoLAN/VLC/vlc.exe"`
 - Built-in apps: `"RUN|notepad"`
 - Launch URLS: `"RUN|https://warbeats.com"`
+
+You can also specify playback of a sound (MP3 or WAV files only) using the `SOUND|` prefix followed by the file path to the sound. For example:
+
+- Sound playback: `"SOUND|./sounds/air_horn.wav"`
 
 Finally you can enter a string of text characters using `TEXT|` prefix. For example:
 

@@ -24,6 +24,7 @@
     "103": { "action": "RUN|notepad", "color": "0xFF00FF" },
     "104": { "action": "RUN|https://warbeats.com", "color": "0x00FF00" },
     "105": { "action": "TYPE|you@youremail.com", "color": "0xFFFF00" },
+    "109": { "action": "SOUND|./sounds/air_horn.wav", "color": "0xFF0000" },
 
     "101": { "action": "volume up", "color": "0xFFFFFF" },
     "117": { "action": "volume down", "color": "0x333333" }

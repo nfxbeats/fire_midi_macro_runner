@@ -26,6 +26,7 @@ import keyboard
 import os
 import subprocess
 from pathlib import Path
+from playsound3 import playsound
 
 def sendkey(key: str):
     """
@@ -41,6 +42,8 @@ def sendkey(key: str):
             run_program(key[4:])
         elif key.startswith("TYPE|"):
             type_text(key[5:])
+        elif key.startswith("SOUND|"):
+            play_sound(key[6:])
         else:
             keyboard.send(key)
     except Exception as e:
@@ -92,3 +95,21 @@ def run_program(path_or_name: str, args=None, cwd=None):
         subprocess.Popen([target] + args, cwd=cwd or None)
     except Exception as e:
         print(f"[Macro Error] Could not start '{path_or_name}': {e}")
+
+# ---------------------------
+# Sound macros (playsound3)
+# ---------------------------
+def play_sound(path: str, block: bool = False):
+    """
+    Play a sound file.
+    - block=False (default) = non-blocking background playback
+    - block=True = wait until finished
+
+    Returns a Sound object (playsound3), which you could store
+    and later call .stop() on if you add that feature.
+    """
+    try:
+        return playsound(path, block=block)  # playsound3 supports block arg
+    except Exception as e:
+        print(f"[Macro Error] Could not play sound '{path}': {e}")
+        return None
