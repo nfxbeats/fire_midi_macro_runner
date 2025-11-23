@@ -18,6 +18,9 @@ This is particularly useful for:
 - Application shortcuts
 - Gaming macros
 
+> [!IMPORTANT]
+> When this app is running the MIDI device will not be usable in FL Studio or other apps. Remember to exit this app before starting your DAW.
+
 ## Requirements
 
 - Python 3.12 or greater
