@@ -1,0 +1,29 @@
+{
+  "default_color": "0x00FFFF",
+  "control_macros": {
+
+    "44": { "action": "CONFIG|macros_config.json", "color": "0x02" },
+    "45": { "action": "CONFIG|gaming_macros.json", "color": "0x03" },
+
+    "54": { "action": "esc", "color": "0xFF0000" },
+    "55": { "action": "tab", "color": "0xFFFF00" },
+    "56": { "action": "w", "color": "0x00FF00" },
+    "57": { "action": "r", "color": "0xFF00FF" },
+    
+    "62": { "action": "a", "color": "0x00FF00" },
+    "63": { "action": "s", "color": "0x00FF00" },
+    "64": { "action": "d", "color": "0x00FF00" },
+    
+    "70": { "action": "space", "color": "0xFFFFFF" },
+    "71": { "action": "shift", "color": "0xFFFFFF" },
+    "72": { "action": "ctrl", "color": "0xFFFFFF" },
+    
+    "80": { "action": "1", "color": "0x0000FF" },
+    "81": { "action": "2", "color": "0x0000FF" },
+    "82": { "action": "3", "color": "0x0000FF" },
+    "83": { "action": "4", "color": "0x0000FF" },
+    
+    "98": { "action": "CONFIG|macros_config.json", "color": "0xFF8800" },
+    "99": { "action": "RUN|notepad", "color": "0xAA00AA" }
+  }
+}

@@ -1,10 +1,13 @@
 {
   "default_color": "0xFFFFFF",
   "control_macros": {
-    "50": "previous track",
-    "51": "play/pause",  
-    "52": "next track",
-    "53": "volume mute", 
+    "44": { "action": "CONFIG|macros_config.json", "color": "0x03" },
+    "45": { "action": "CONFIG|gaming_macros.json", "color": "0x02" },
+
+    "50": { "action": "previous track", "color": "0x02" },
+    "51": { "action": "play/pause", "color": "0x01" }, 
+    "52": { "action": "next track", "color": "0x01" },
+    "53": { "action": "volume mute", "color": "0x01" },
 
     "54": { "action": "esc", "color": "0xFFFFFF" },
     "58": { "action": "f1", "color": "0xFF0000" },
@@ -28,6 +31,6 @@
 
     "101": { "action": "volume up", "color": "0xFFFFFF" },
     "117": { "action": "volume down", "color": "0x333333" }
-
+    
   }
 }

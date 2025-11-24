@@ -47,6 +47,14 @@ if !MODULE_ERROR! neq 0 (
     exit /b 1
 )
 
+rem Check if default_macros.json exists, if not copy macros_config.json to it
+if not exist "default_macros.json" (
+    echo Creating default_macros.json from macros_config.json...
+    copy macros_config.json default_macros.json >nul
+) else (
+    echo Using existing default_macros.json...
+)
+
 echo Starting Fire MIDI Macro Runner...
 %PYTHON_CMD% fire_midi_macro_runner.py
 set RUN_ERROR=!ERRORLEVEL!

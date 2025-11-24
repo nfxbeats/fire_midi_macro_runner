@@ -39,6 +39,43 @@ FIRE_PORT = None
 PADSTART = 54
 PADEND = 117
 
+
+# Buttons
+ID_KNOBMODE = 26
+ID_PATUP = 31
+ID_PATDOWN = 32
+ID_BROWSER = 33
+ID_GRIDLEFT = 34
+ID_GRIDRIGHT = 35
+ID_MUTE1 = 36
+ID_MUTE2 = 37
+ID_MUTE3 = 38
+ID_MUTE4 = 39
+ID_PATTERN = 44
+ID_NOTE = 45
+ID_DRUM = 46
+ID_PERFORMANCE = 47
+ID_SHIFT = 48
+ID_ALT = 49
+ID_PATTSONG = 50
+ID_PLAY = 51
+ID_STOP = 52
+ID__RECORD = 53
+
+
+FOURCOLOR_BUTTONS = [ID_PATTERN, ID_NOTE, ID_DRUM, ID_PERFORMANCE, ID_PATTSONG, ID_PLAY, ID__RECORD ]
+TWOCOLOR_BUTTONS = [ID_ALT, ID_PATUP, ID_PATDOWN, ID_BROWSER, ID_GRIDLEFT, ID_GRIDRIGHT, ID_STOP, ID_MUTE1, ID_MUTE2, ID_MUTE3, ID_MUTE4 ]
+# Colors
+DualColorOff = 0x00
+DualColorHalfBright1 = 0x01
+DualColorHalfBright2 = 0x02
+DualColorFull1 = 0x03
+DualColorFull2 = 0x04
+
+SingleColorOff = 0x00
+SingleColorHalfBright = 0x01
+SingleColorFull = 0x02
+
 def init_port(port_name):
     """
     Initialize the MIDI output port for communicating with the FL Studio Fire controller.
@@ -63,10 +100,30 @@ def clear_pads():
     for pad in range(PADSTART, PADEND):
         set_pad_color(pad, 0x000000)
 
-def cose_port():
+def close_port():
     global FIRE_PORT
     clear_pads()
     FIRE_PORT.close()
+    
+def set_mode_buttons(ctrl_id, value):
+    if ctrl_id in FOURCOLOR_BUTTONS:
+        if value < 1:
+            color = 0x00
+        elif value > 4:
+            color = 0x04
+        else:
+            color = value
+        send_midi_cc(FIRE_PORT, ctrl_id, color)
+
+    if ctrl_id in TWOCOLOR_BUTTONS:
+        if value < 1:
+            color = 0x00
+        elif value > 2:
+            color = 0x02
+        else:
+            color = value
+        send_midi_cc(FIRE_PORT, ctrl_id, color)
+
 
 def send_midi_cc(port, control, value, channel=0):
     """
@@ -205,6 +262,7 @@ def set_pad_color(padIdx, color):
         - The color is automatically converted to the Fire controller's color format
     """
     if padIdx < PADSTART or padIdx > PADEND:
+        set_mode_buttons(padIdx, color)
         return
     padIdx = padIdx - PADSTART
     padColor = color_to_fire_color(color)

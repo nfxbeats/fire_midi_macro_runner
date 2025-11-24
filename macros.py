@@ -1,25 +1,29 @@
 """
 Macros Module for Fire MIDI Macro Runner
-Author: Nelson F. Fernandez Jr.
+Author: Nelson F. Fernandez Jr. (modified by Cline)
 Created on: 2025-Nov-21
 
 This module provides the core functionality for executing user-defined macros
 when MIDI control events are triggered. It handles sending keyboard shortcuts,
-running applications, opening URLs, and typing text strings.
+running applications, opening URLs, typing text strings, and loading configurations.
 
 The module is designed to work with the fire-midi-macro-runner.py main application,
 which maps MIDI control IDs to specific macro actions defined in this module.
 
 Functions:
-    sendkey(key): Send keyboard shortcuts or execute special commands (RUN|, TYPE|)
+    sendkey(key): Send keyboard shortcuts or execute special commands (RUN|, TYPE|, etc.)
     type_text(text): Type a string of text character by character
     run_program(path_or_name, args, cwd): Start an application, open a file, or load a URL
+    reload_config(config_path): Reload configuration from a specified file
+    set_config_reload_callback(callback): Register a callback for CONFIG| actions
 
 Usage examples:
     sendkey("ctrl+s")                           # Send Ctrl+S shortcut
     sendkey("RUN|notepad")                      # Launch Notepad
     sendkey("RUN|https://example.com")          # Open URL in browser
     sendkey("TYPE|Hello, world!")               # Type the provided text
+    sendkey("SOUND|./sounds/alert.wav")         # Play a sound file
+    sendkey("CONFIG|gaming_macros.json")        # Load a different configuration file
 """
 
 import keyboard
@@ -28,14 +32,48 @@ import subprocess
 from pathlib import Path
 from playsound3 import playsound
 
+# Callback for CONFIG| actions
+_config_reload_callback = None
+
+def set_config_reload_callback(callback):
+    """
+    Register a callback function to be called when a CONFIG action is triggered.
+    
+    Parameters:
+        callback: A function that takes a config path string and returns a boolean
+                 indicating success or failure.
+    """
+    global _config_reload_callback
+    _config_reload_callback = callback
+
+def reload_config(config_path: str):
+    """
+    Handle a CONFIG| action to reload a configuration file.
+    
+    Parameters:
+        config_path (str): Path to the configuration file to load.
+        
+    Returns:
+        bool: True if reload was successful, False otherwise.
+    """
+    if _config_reload_callback:
+        return _config_reload_callback(config_path)
+    print(f"[Macro Error] No callback registered for CONFIG actions.")
+    return False
+
 def sendkey(key: str):
     """
-    Send any key combination to the currently-focused window.
+    Send any key combination to the currently-focused window or execute special commands.
+    
     Examples:
-        sendkey("f3")
-        sendkey("ctrl+s")
-        sendkey("ctrl+shift+p")
-        sendkey("alt+tab")
+        sendkey("f3")                         # Send F3 key
+        sendkey("ctrl+s")                     # Send Ctrl+S shortcut
+        sendkey("ctrl+shift+p")               # Send Ctrl+Shift+P shortcut
+        sendkey("alt+tab")                    # Send Alt+Tab shortcut
+        sendkey("RUN|notepad")                # Launch Notepad
+        sendkey("TYPE|Hello")                 # Type "Hello"
+        sendkey("SOUND|./sounds/beep.wav")    # Play a sound
+        sendkey("CONFIG|editing_macros.json") # Load a configuration
     """
     try:
         if key.startswith("RUN|"):
@@ -44,6 +82,8 @@ def sendkey(key: str):
             type_text(key[5:])
         elif key.startswith("SOUND|"):
             play_sound(key[6:])
+        elif key.startswith("CONFIG|"):
+            reload_config(key[7:])
         else:
             keyboard.send(key)
     except Exception as e:

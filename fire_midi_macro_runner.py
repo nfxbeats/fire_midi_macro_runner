@@ -1,6 +1,6 @@
 """
 Fire MIDI Macro Runner
-Author: Nelson F. Fernandez Jr.
+Author: Nelson F. Fernandez Jr. (modified by Cline)
 Created on: 2025-Nov-21
 
 A Python application that maps MIDI pad controllers (specifically the FL Studio FIRE)
@@ -12,6 +12,8 @@ various actions by pressing pads. Each pad can be configured with:
 - A keyboard shortcut (e.g., F3, Ctrl+S, Alt+Tab)
 - A command to run an application or open a URL using the RUN| prefix
 - A text string to type using the TYPE| prefix
+- A sound to play using the SOUND| prefix
+- A configuration file to load using the CONFIG| prefix
 - A custom RGB color for visual feedback on the Fire controller
 
 Key features:
@@ -20,24 +22,26 @@ Key features:
 - RGB color feedback for active macros (Fire controller only)
 - Support for both Fire-specific features and generic MIDI controllers 
 - Keyboard shortcuts, program launching, and text typing capabilities
+- Hot-swappable configurations via CONFIG| actions
 
 Components:
 - macros.py: Core functions for keyboard shortcuts and program execution
 - fire_code.py: Fire controller-specific MIDI features (pad colors)
 - gen_code.py: Generic MIDI controller compatibility layer
+- macro_runner.py: MacroRunner class for configuration management
 - macros_config.json: User-defined macro configurations
 
 Usage:
 1. Edit macros_config.json to define your MIDI pad mappings
 2. Run this application
 3. Press pads on your controller to trigger the configured actions
+4. Use CONFIG| actions to switch between different configuration files
 """
 
 import time
-import json
-import os
 import mido
 import macros
+from macro_runner import MacroRunner
 
 # this line import the fire specific code.
 import fire_code as fc
@@ -46,6 +50,7 @@ import fire_code as fc
 
 MIDI_CONFIG_FILE = "midi_config.json"
 MACROS_CONFIG_FILE = "macros_config.json"
+DEFAULT_CONFIG_FILE = "default_macros.json"  # Preferred configuration file if it exists
 
 
 # ---------------------------
@@ -64,46 +69,6 @@ def set_pad_color(midiId, color):
     """
     print(f"[LED INIT] set_pad_color({midiId}, 0x{color:06X})")
     fc.set_pad_color(midiId, color)
-
-
-# ---------------------------
-# Config Helpers
-# ---------------------------
-def load_json(path):
-    """
-    Load and parse a JSON file from the specified path.
-    
-    Parameters:
-        path (str): The path to the JSON file.
-        
-    Returns:
-        dict: The parsed JSON content, or an empty dict if file doesn't exist or can't be read.
-    """
-    if os.path.exists(path):
-        try:
-            with open(path, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception as e:
-            print(f"[Config] Could not read {path}: {e}")
-    return {}
-
-def save_json(path, data):
-    """
-    Save data as JSON to the specified path.
-    
-    Parameters:
-        path (str): The path where the JSON file will be saved.
-        data (dict): The data to be serialized and saved.
-        
-    Returns:
-        None
-    """
-    try:
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2)
-        print(f"[Config] Saved {path}")
-    except Exception as e:
-        print(f"[Config] Could not save {path}: {e}")
 
 
 # ---------------------------
@@ -142,98 +107,8 @@ def select_device(devices):
         print("Invalid selection, try again.")
 
 
-# ---------------------------
-# Color Parsing
-# ---------------------------
-def parse_color(value):
-    """
-    Parse color values from various formats into a standard 0xRRGGBB integer format.
-    
-    Parameters:
-        value: The color value to parse. Can be:
-            - None: Returns None
-            - int: Returns the integer value directly
-            - str: Parses hex strings like "0xFF0000" or "#FF0000" to integers
-    
-    Returns:
-        int: The parsed color as an integer in 0xRRGGBB format, or None if input was None.
-    """
-    if value is None:
-        return None
-
-    if isinstance(value, int):
-        return value
-
-    if isinstance(value, str):
-        s = value.strip().lower()
-        if s.startswith("0x"):
-            return int(s, 16)
-        if s.startswith("#"):
-            return int(s[1:], 16)
-        return int(s, 16)
-
-    return None
 
 
-# ---------------------------
-# Macro Mapping + Color Assignment
-# ---------------------------
-def build_control_macros(cfg):
-    """
-    Build mappings between MIDI Control IDs and their associated actions and colors.
-    
-    Parameters:
-        cfg (dict): Configuration dictionary loaded from macros_config.json.
-        
-    Returns:
-        tuple: A tuple containing three dictionaries:
-            - control_macros (dict): Maps MIDI Control IDs to callable functions.
-            - control_colors (dict): Maps MIDI Control IDs to RGB color values.
-            - control_actions (dict): Maps MIDI Control IDs to human-readable action descriptions.
-    """
-    control_macros = {}
-    control_colors = {}
-    control_actions = {}
-
-    # Load global default color
-    default_color = parse_color(cfg.get("default_color", "0xFFFFFF"))
-
-    raw = cfg.get("control_macros", {})
-    for control_str, entry in raw.items():
-        try:
-            note = int(control_str)
-        except ValueError:
-            print(f"[Config] Invalid note value: {control_str}")
-            continue
-
-        # Old style: just a action string
-        if isinstance(entry, str):
-            action = entry
-            color_int = default_color
-
-        # New style
-        elif isinstance(entry, dict):
-            action = entry.get("action")
-            if not isinstance(action, str):
-                print(f"[Config] Missing/invalid 'action' for note {control_str}")
-                continue
-            color_value = entry.get("color")
-            color_int = parse_color(color_value) if color_value else default_color
-
-        else:
-            print(f"[Config] Invalid mapping for note {control_str}")
-            continue
-
-        # Store macro callable
-        control_macros[note] = (lambda kc=action: macros.sendkey(kc))
-
-        # Store actual action text for display
-        control_actions[note] = action
-
-        # Store color
-        control_colors[note] = color_int
-
-    return control_macros, control_colors, control_actions
 
 
 def initialize_pad_colors(control_colors):
@@ -246,43 +121,20 @@ def initialize_pad_colors(control_colors):
     Returns:
         None
     """
+    fc.clear_pads()
     for midiId, color in control_colors.items():
         if color is not None:
             set_pad_color(midiId, color)
 
 
-# ---------------------------
-# MIDI Handling
-# ---------------------------
-def handle_message(msg, control_macros, control_actions):
-    """
-    Process incoming MIDI messages and trigger the associated actions.
-    
-    Parameters:
-        msg (mido.Message): The MIDI message to handle.
-        control_macros (dict): Mapping of MIDI Control IDs to callable functions.
-        control_actions (dict): Mapping of MIDI Control IDs to action descriptions.
-        
-    Returns:
-        None
-    """
-    if msg.type == "note_on" and msg.velocity > 0:
-        control_id = msg.note
-        if control_id in control_macros:
-            print(f"Trigger: MIDI Control ID# {control_id} -> {control_actions[control_id]}")
-            control_macros[control_id]()
-        else:
-            print(f"Trigger: MIDI Control ID# {control_id} -> * UNUSED *")
 
-
-def monitor_device(port_name, control_macros, control_actions):
+def monitor_device(port_name, runner):
     """
     Continuously monitor a MIDI device and handle incoming messages.
     
     Parameters:
         port_name (str): Name of the MIDI input device to monitor.
-        control_macros (dict): Mapping of MIDI Control IDs to callable functions.
-        control_actions (dict): Mapping of MIDI Control IDs to action descriptions.
+        runner (MacroRunner): The MacroRunner instance to handle messages.
         
     Returns:
         None
@@ -290,10 +142,10 @@ def monitor_device(port_name, control_macros, control_actions):
     print(f"\nListening on: {port_name}")
     print("Press Ctrl+C to quit.\n")
 
-    with mido.open_input(port_name) as port:
+    with mido.open_input(port_name) as port:  # This is correct despite linting error
         while True:
             for msg in port.iter_pending():
-                handle_message(msg, control_macros, control_actions)
+                runner.handle_message(msg)
             time.sleep(0.01)
 
 
@@ -308,11 +160,23 @@ def main():
     sets up pad colors according to configuration, and starts
     monitoring for incoming MIDI messages.
     """
-    midi_cfg = load_json(MIDI_CONFIG_FILE)
-    macro_cfg = load_json(MACROS_CONFIG_FILE)
+    # Create and initialize the MacroRunner with preferred configuration
+    runner = MacroRunner(MIDI_CONFIG_FILE, MACROS_CONFIG_FILE, DEFAULT_CONFIG_FILE)
+    runner.load_configuration()
 
-    # Build macros + colors from macros_config.json
-    control_macros, control_colors, control_actions = build_control_macros(macro_cfg)
+    # Set up the CONFIG| action callback
+    def handle_config_reload(config_path):
+        """Handle a configuration reload request from a macro action"""
+        success, new_colors = runner.reload_configuration(config_path)
+        if success:
+            initialize_pad_colors(new_colors)
+            print(f"[Config] Loaded configuration from {config_path}")
+            return True
+        else:
+            print(f"[Config] Failed to load configuration from {config_path}")
+            return False
+    
+    macros.set_config_reload_callback(handle_config_reload)
 
     # Inspect available devices
     devices = list_devices()
@@ -321,7 +185,7 @@ def main():
         return
 
     # Find or prompt device
-    stored_name = midi_cfg.get("device_name")
+    stored_name = runner.midi_cfg.get("device_name")
     if stored_name and stored_name in devices:
         port_name = stored_name
         print(f"\n[Config] Using saved device: {port_name}")
@@ -329,14 +193,14 @@ def main():
         if stored_name:
             print(f"\n[Config] Saved device not found: {stored_name}")
         port_name = select_device(devices)
-        midi_cfg["device_name"] = port_name
-        save_json(MIDI_CONFIG_FILE, midi_cfg)
+        runner.midi_cfg["device_name"] = port_name
+        runner.save_json(MIDI_CONFIG_FILE, runner.midi_cfg)
 
     # Run
     try:
         fc.init_port(port_name)
-        initialize_pad_colors(control_colors)
-        monitor_device(port_name, control_macros, control_actions)
+        initialize_pad_colors(runner.get_color_map())
+        monitor_device(port_name, runner)
 
     except KeyboardInterrupt:
         print("\nExiting cleanly...")

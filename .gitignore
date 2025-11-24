@@ -1,3 +1,8 @@
 midi_config.json
 *.pyc
 
+.vscode/launch.json
+.gitignore
+.vscode/settings.json
+.vscode/tasks.json
+default_macros.json

@@ -11,6 +11,7 @@ With minimal code changes you can use this for any MIDI device. Non-Fire devices
 - Start a process (e.g. open a program or web site)
 - Type a text string.
 - A custom RGB color for visual recognition
+- Ability to load different macro sets
 
 This is particularly useful for:
 - Audio/video editing workflows
@@ -58,14 +59,29 @@ The first time you run the application, it will prompt you to select your MIDI d
 
 If you do not select an Akai Fire, you should replace the `import fire_code as fc` line to `import gen_code as fc` inside fire_midi_macro_runner.py and remove the existing defined actions from `macros_config.json` and build your own based off the MIDI controller IDs from your device.
 
+### Configuration Files
+
+The application supports multiple configuration files:
+
+- `default_macros.json`: This is the primary configuration file. When you run the application for the first time using `start_windows.bat`, it will automatically create this file by copying `macros_config.json` if it doesn't already exist. This file willnot be overwritten by updates.
+
+- `macros_config.json`: This is the fallback configuration that's included with the application. This file may be overwritten by updates.
+
+- `gaming_macros.json`: This is another sample for demo purposes. It may be overwritten by future updates.
+
+- Custom config files (e.g., `gaming_macros.json`): You can create additional configuration files for different uses and switch between them using the CONFIG action (see below).
+
 ### Macro Configuration
 
-Edit `macros_config.json` to customize your pad mappings:
+Edit `macros_config.json` to customize your pad mappings. Sample:
 
 ```json
 {
   "default_color": "0xFFFFFF",  // Default color for all pads (white)
   "control_macros": {
+
+    "44": { "action": "CONFIG|macros_config.json", "color": "0x03" },   // load a macro set
+    "45": { "action": "CONFIG|gaming_macros.json", "color": "0x02" },   // load a macro set
     
     "56": { "action": "f3", "color": "0xFF0000" },  // Red pad that sends F3 key
     "57": "ctrl+s",                                 // Default color pad that sends Ctrl+S
@@ -89,26 +105,70 @@ Edit `macros_config.json` to customize your pad mappings:
   - Simple format: `"MIDI Control ID#": "key_combination"`
   - Extended format: `"MIDI Control ID#": { "action": "key_combination", "color": "hex_color" }`
 
+#### Action Types
+
+The `action` field supports several types of commands:
+
+- **Keyboard shortcuts**: `"f1"`, `"ctrl+s"`, `"alt+tab"`
+- **Running programs**: Use `"RUN|"` prefix, e.g., `"RUN|notepad"` or `"RUN|https://warbeats.com"`
+- **Typing text**: Use `"TYPE|"` prefix, e.g., `"TYPE|you@youremail.com"`
+- **Playing sounds**: Use `"SOUND|"` prefix, e.g., `"SOUND|./sounds/air_horn.wav"`
+- **Loading configurations**: Use `"CONFIG|"` prefix, e.g., `"CONFIG|gaming_macros.json"` to load a different configuration file on-the-fly
+
 #### Color Formats
 
-Colors can be specified in any of these formats:
+RGB Colors can be specified in any of these formats:
 - Hexadecimal: `"0xFF0000"` or `"#FF0000"` (red)
 - Integer: `16711680` (equivalent to 0xFF0000)
 
 > [!NOTE]
-> Colors are used for the Akai Fire Pads ONLY which start at MIDI Control ID#54 (top left pad) and end at MIDI Control ID#117 (bottom right pad). Any color definition for controls outside this range or for nonFire devices will be ignored.
+> RGB colors are used for the Akai Fire Pads ONLY which start at MIDI Control ID#54 (top left pad) and end at MIDI Control ID#117 (bottom right pad). Any color definition for controls outside this range use the table below
+
+##### Non RGB Pad Color Support
+| ID | Fire Label | Supported Colors |
+| :--| :--------  | :--------------- |
+| 31 | PATTERN UP   | 0x00=Off, 0x01=Dim Red, 0x02=Red |
+| 32 | PATTERN DOWN | 0x00=Off, 0x01=Dim Red, 0x02=Red |
+| 33 | BROWSER      | 0x00=Off, 0x01=Dim Red, 0x02=Red |
+| 34 | GRID LEFT    | 0x00=Off, 0x01=Dim Red, 0x02=Red |
+| 35 | GRID RIGHT   | 0x00=Off, 0x01=Dim Red, 0x02=Red |
+| 36 | MUTE 1       | 0x00=Off, 0x01=Dim Green, 0x02=Green |
+| 37 | MUTE 2       | 0x00=Off, 0x01=Dim Green, 0x02=Green |
+| 38 | MUTE 3       | 0x00=Off, 0x01=Dim Green, 0x02=Green |
+| 39 | MUTE 4       | 0x00=Off, 0x01=Dim Green, 0x02=Green |
+| 44 | STEP         | 0x00=Off, 0x01=Dim Red, 0x02=Dim Yellow, 0x03=Red, 0x04=Yellow |
+| 45 | NOTE         | 0x00=Off, 0x01=Dim Red, 0x02=Dim Yellow, 0x03=Red, 0x04=Yellow |
+| 46 | DRUM         | 0x00=Off, 0x01=Dim Red, 0x02=Dim Yellow, 0x03=Red, 0x04=Yellow |
+| 47 | PERFORM      | 0x00=Off, 0x01=Dim Red, 0x02=Dim Yellow, 0x03=Red, 0x04=Yellow |
+| 48 | SHIFT        | 0x00=Off, 0x01=Dim Red, 0x02=Dim Yellow, 0x03=Red, 0x04=Yellow |
+| 49 | ALT          | 0x00=Off, 0x01=Dim Yellow, 0x02=Yellow |
+| 50 | PATT/SONG    | 0x00=Off, 0x01=Dim Green, 0x02=Dim Yellow, 0x03=Green, 0x04=Yellow |
+| 51 | PLAY         | 0x00=Off, 0x01=Dim Green, 0x02=Dim Yellow, 0x03=Green, 0x04=Yellow |
+| 52 | STOP         | 0x00=Off, 0x01=Dim Yellow, 0x02=Bright Yellow |
+| 53 | RECORD       | 0x00=Off, 0x01=Dim Red, 0x02=Dim Yellow, 0x03=Red, 0x04=Yellow |
+
+##### Unsupported LEDS
+
+The knob mode LEDs (CHANNEL, MIXER, USER 1, USER 2) are not supported at this time.
+
 
 ## Usage
 
 1. Run the application:
 
+Windows (Easy):
+```
+start_windows.bat
+```
+
+Manual:
 ```
 python fire_midi_macro_runner.py
 ```
 
-2. If this is your first time running it, you'll be prompted to select your MIDI device. A `midi_config.json` will be created.
+2. If this is your first time running it, you'll be prompted to select your MIDI device. A `midi_config.json` will be created. Delete this file if you want to reset the device.
 3. Press pads/buttons on your controller to trigger the configured keyboard shortcuts
-4. A message will appear in the console showing the MIDI Control ID that was pressed so you can easily know what MIDI Control ID is available to use. If the control is already defined, it will show you the defined text otherwise it will say `* UNUSED *` 
+4. A message will appear in the console showing the MIDI Control ID that was pressed so you can easily know what MIDI Control ID is available to use. If the control is already defined, it will show you the defined action otherwise it will say `* UNUSED *` 
 5. Press Ctrl+C in the terminal to exit the application
 
 ## Customizing Macros
@@ -132,12 +192,16 @@ You can also specify playback of a sound (MP3 or WAV files only) using the `SOUN
 
 - Sound playback: `"SOUND|./sounds/air_horn.wav"`
 
-Finally you can enter a string of text characters using `TEXT|` prefix. For example:
+> [!IMPORTANT]
+> When specifying file paths, it is recommended to use forward slashes (`/`) instead of backslashes, even on Windows. This helps prevent issues with path parsing and ensures compatibility.
+
+You can enter a string of text characters using `TEXT|` prefix. For example:
 
 - Type text: `"TYPE|yourname@youremail.com"`
 
-> [!IMPORTANT]
-> When specifying file paths, it is recommended to use forward slashes (`/`) instead of backslashes, even on Windows. This helps prevent issues with path parsing and ensures compatibility.
+Finally you can specify a pad to load another config file. This would be useful if you wanted one layout for general use and another specific layout for an application or purpose. To make a button load another set of macros use the `CONFIG|` prefix. For example:
+
+- Load a config: `""CONFIG|gaming_macros.json""` 
 
 ## Troubleshooting
 
