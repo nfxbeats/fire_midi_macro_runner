@@ -61,21 +61,31 @@ def reload_config(config_path: str):
     print(f"[Macro Error] No callback registered for CONFIG actions.")
     return False
 
-def sendkey(key: str):
+def sendkey(key: str, mode: str = "send"):
     """
     Send any key combination to the currently-focused window or execute special commands.
+    
+    Parameters:
+        key (str): The key combination or command to execute.
+        mode (str): The mode of operation:
+            - "send" (default): Press and release the key immediately (normal behavior)
+            - "press": Press the key down and hold it
+            - "release": Release a previously pressed key
     
     Examples:
         sendkey("f3")                         # Send F3 key
         sendkey("ctrl+s")                     # Send Ctrl+S shortcut
         sendkey("ctrl+shift+p")               # Send Ctrl+Shift+P shortcut
         sendkey("alt+tab")                    # Send Alt+Tab shortcut
+        sendkey("w", mode="press")            # Press and hold W key
+        sendkey("w", mode="release")          # Release W key
         sendkey("RUN|notepad")                # Launch Notepad
         sendkey("TYPE|Hello")                 # Type "Hello"
         sendkey("SOUND|./sounds/beep.wav")    # Play a sound
         sendkey("CONFIG|editing_macros.json") # Load a configuration
     """
     try:
+        # Special commands always execute immediately, ignoring mode
         if key.startswith("RUN|"):
             run_program(key[4:])
         elif key.startswith("TYPE|"):
@@ -85,9 +95,77 @@ def sendkey(key: str):
         elif key.startswith("CONFIG|"):
             reload_config(key[7:])
         else:
-            keyboard.send(key)
+            # Handle keyboard key operations based on mode
+            if mode == "press":
+                # Press key(s) down and hold
+                _press_keys(key)
+            elif mode == "release":
+                # Release previously pressed key(s)
+                _release_keys(key)
+            else:  # mode == "send" or any other value
+                # Normal behavior: press and release immediately
+                keyboard.send(key)
     except Exception as e:
-        print(f"[Macro Error] Could not send key '{key}': {e}")
+        print(f"[Macro Error] Could not send key '{key}' in mode '{mode}': {e}")
+
+
+def _press_keys(key: str):
+    """
+    Press down key(s) and hold them.
+    Handles both single keys and combinations like 'ctrl+s'.
+    
+    Parameters:
+        key (str): The key or key combination to press.
+    
+    Notes:
+        keyboard.parse_hotkey() returns a nested tuple structure:
+        - (step, step, ...) for key sequences
+        - Each step is (key_alternatives, key_alternatives, ...) for keys pressed together
+        - Each key_alternatives is (scancode, scancode_alt, ...) for the same key on different layouts
+        
+        Example: parse_hotkey("ctrl+s") returns (((29,), (31,)),)
+        - One step: ((29,), (31,))
+        - Two keys pressed together: (29,) for ctrl, (31,) for s
+        - We use [0] to get the primary scancode from each key_alternatives tuple
+    """
+    try:
+        parsed = keyboard.parse_hotkey(key)
+        
+        for step in parsed:
+            for key_alternatives in step:
+                # key_alternatives is a tuple like (scancode,) or (scancode1, scancode2_alt)
+                # Extract the first (primary) scancode to press
+                scancode = key_alternatives[0]
+                keyboard.press(scancode)
+    except Exception as e:
+        print(f"[Macro Error] Could not press key '{key}': {e}")
+
+
+def _release_keys(key: str):
+    """
+    Release previously pressed key(s).
+    Handles both single keys and combinations like 'ctrl+s'.
+    Releases keys in reverse order to maintain proper modifier handling.
+    
+    Parameters:
+        key (str): The key or key combination to release.
+    
+    Notes:
+        See _press_keys for details on the parse_hotkey return structure.
+        Keys are released in reverse order so modifiers (ctrl, shift, etc.) 
+        are released after the main keys.
+    """
+    try:
+        parsed = keyboard.parse_hotkey(key)
+        
+        # Release keys in reverse order (modifiers last)
+        for step in reversed(parsed):
+            for key_alternatives in reversed(step):
+                # Extract the first (primary) scancode to release
+                scancode = key_alternatives[0]
+                keyboard.release(scancode)
+    except Exception as e:
+        print(f"[Macro Error] Could not release key '{key}': {e}")
 
 def type_text(text: str):
     """

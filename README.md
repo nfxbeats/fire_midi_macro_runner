@@ -103,7 +103,35 @@ Edit `macros_config.json` to customize your pad mappings. Sample:
 - `default_color`: Sets the default color for all pads with a defined macro (hex format)
 - `control_macros`: Maps MIDI Control ID#s to keyboard shortcuts
   - Simple format: `"MIDI Control ID#": "key_combination"`
-  - Extended format: `"MIDI Control ID#": { "action": "key_combination", "color": "hex_color" }`
+  - Extended format: `"MIDI Control ID#": { "action": "key_combination", "color": "hex_color", "hold": false }`
+
+#### Hold Feature
+
+The `hold` attribute allows a button to simulate holding down a key for as long as you hold the button:
+
+- `"hold": false` (default): Pressing the button triggers a single key press (press + release immediately)
+- `"hold": true`: Holding the button down keeps the key pressed, releasing the button releases the key
+
+This is particularly useful for:
+- Gaming (hold W to move forward, hold Shift to run, hold Space to jump)
+- Modifier keys (hold Ctrl, Shift, or Alt)
+- Any action where you need continuous key press
+
+Example:
+```json
+{
+  "control_macros": {
+    "54": { "action": "w", "color": "0x00FF00", "hold": true },      // Hold W key while button is pressed
+    "55": { "action": "shift", "color": "0xFF0000", "hold": true },  // Hold Shift key while button is pressed
+    "56": { "action": "ctrl+s", "color": "0xFFFF00" }                // Normal: trigger Ctrl+S once on press
+  }
+}
+```
+
+> [!NOTE]
+> The `hold` feature only works with keyboard keys. Special commands (RUN|, TYPE|, SOUND|, CONFIG|) always trigger once on button press and ignore the `hold` setting.
+
+See `example_hold_config.json` for a complete example configuration demonstrating the hold feature.
 
 #### Action Types
 

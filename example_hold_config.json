@@ -1,0 +1,22 @@
+{
+  "default_color": "0xFFFFFF",
+  "control_macros": {
+    "54": { "action": "w", "color": "0x00FF00", "hold": true },
+    "55": { "action": "a", "color": "0x00FF00", "hold": true },
+    "56": { "action": "s", "color": "0x00FF00", "hold": true },
+    "57": { "action": "d", "color": "0x00FF00", "hold": true },
+    
+    "58": { "action": "shift", "color": "0xFF0000", "hold": true },
+    "59": { "action": "ctrl", "color": "0xFF00FF", "hold": true },
+    "60": { "action": "space", "color": "0x0000FF", "hold": true },
+    
+    "61": { "action": "ctrl+c", "color": "0xFFFF00" },
+    "62": { "action": "ctrl+v", "color": "0xFFFF00" },
+    
+    "63": { "action": "f5", "color": "0xFF6000" },
+    "64": { "action": "esc", "color": "0xFFFFFF" },
+    
+    "101": { "action": "RUN|notepad", "color": "0x00FFFF" },
+    "102": { "action": "SOUND|./sounds/air_horn.wav", "color": "0xFF0000" }
+  }
+}

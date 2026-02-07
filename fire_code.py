@@ -26,8 +26,6 @@ on the controller when macros are active.
 
 import mido 
 import mido.backends.rtmidi
-import time
-import math
 
 
 # sysex state def

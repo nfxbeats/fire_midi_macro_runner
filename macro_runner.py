@@ -21,6 +21,7 @@ This module works together with:
 
 import json
 import os
+import time
 import macros
 from typing import Dict, Tuple, Callable, Any, Optional
 
@@ -52,6 +53,11 @@ class MacroRunner:
         self.control_macros = {}  # Maps MIDI Control IDs to callable functions
         self.control_colors = {}  # Maps MIDI Control IDs to RGB color values
         self.control_actions = {}  # Maps MIDI Control IDs to human-readable action descriptions
+        self.control_hold_enabled = {}  # Maps MIDI Control IDs to boolean (whether hold is enabled)
+        self.currently_held_keys = {}  # Maps MIDI Control IDs to the keys currently being held
+        self.debug_midi_messages = False  # If True, print raw MIDI messages for troubleshooting
+        self.note_on_debounce_ms = 0  # Optional debounce window for note_on events (milliseconds)
+        self.last_note_on_time = {}  # Maps MIDI Control IDs to last accepted note_on timestamp
 
     def load_json(self, path: str) -> dict:
         """
@@ -134,6 +140,7 @@ class MacroRunner:
         control_macros = {}
         control_colors = {}
         control_actions = {}
+        self.control_hold_enabled = {}  # Clear and rebuild hold settings
 
         # Load global default color
         default_color = self.parse_color(cfg.get("default_color", "0xFFFFFF"))
@@ -150,6 +157,7 @@ class MacroRunner:
             if isinstance(entry, str):
                 action = entry
                 color_int = default_color
+                hold_enabled = False
 
             # New style
             elif isinstance(entry, dict):
@@ -159,6 +167,7 @@ class MacroRunner:
                     continue
                 color_value = entry.get("color")
                 color_int = self.parse_color(color_value) if color_value else default_color
+                hold_enabled = entry.get("hold", False)  # Default to False if not specified
 
             else:
                 print(f"[Config] Invalid mapping for note {control_str}")
@@ -172,6 +181,9 @@ class MacroRunner:
 
             # Store color
             control_colors[note] = color_int
+
+            # Store hold setting
+            self.control_hold_enabled[note] = hold_enabled
 
         return control_macros, control_colors, control_actions
 
@@ -209,6 +221,16 @@ class MacroRunner:
         if not self.macro_cfg:
             print(f"[Config] Failed to load configuration from {macro_config_path}")
             return False
+
+        # Optional global runtime settings
+        self.debug_midi_messages = bool(self.macro_cfg.get("debug_midi_messages", False))
+        debounce_val = self.macro_cfg.get("note_on_debounce_ms", 0)
+        try:
+            self.note_on_debounce_ms = max(0, int(debounce_val))
+        except (TypeError, ValueError):
+            print(f"[Config] Invalid note_on_debounce_ms value '{debounce_val}', defaulting to 0")
+            self.note_on_debounce_ms = 0
+        self.last_note_on_time.clear()
             
         # If we successfully loaded the config, update our current config path
         self.macros_config_path = macro_config_path
@@ -220,6 +242,7 @@ class MacroRunner:
     def reload_configuration(self, config_path: str) -> Tuple[bool, Dict[int, int]]:
         """
         Reload configuration from a different file.
+        Releases any currently held keys before reloading to prevent stuck keys.
         
         Parameters:
             config_path (str): Path to the new configuration file.
@@ -229,6 +252,13 @@ class MacroRunner:
                 - success (bool): True if reload was successful
                 - color_map (dict): Updated mapping of MIDI Control IDs to colors
         """
+        # Release all currently held keys before reloading to prevent stuck keys
+        if self.currently_held_keys:
+            print(f"[Config] Releasing {len(self.currently_held_keys)} held key(s) before reload")
+            for control_id, action in list(self.currently_held_keys.items()):
+                macros.sendkey(action, mode="release")
+            self.currently_held_keys.clear()
+        
         # Store current configuration for fallback
         old_macro_cfg = self.macro_cfg
         old_control_macros = self.control_macros
@@ -263,6 +293,7 @@ class MacroRunner:
     def handle_message(self, msg: Any) -> None:
         """
         Process incoming MIDI messages and trigger the associated actions.
+        Handles both button press (note_on) and button release (note_off) events.
         
         Parameters:
             msg: The MIDI message to handle (from mido library).
@@ -270,10 +301,60 @@ class MacroRunner:
         Returns:
             None
         """
+        if self.debug_midi_messages:
+            print(f"[MIDI DEBUG] {msg}")
+
+        # We only process note messages for macro triggering.
+        if not hasattr(msg, "note"):
+            return
+
+        control_id = msg.note
+        
+        # Button Press: note_on with velocity > 0
         if msg.type == "note_on" and msg.velocity > 0:
-            control_id = msg.note
-            if control_id in self.control_macros:
-                print(f"Trigger: MIDI Control ID# {control_id} -> {self.control_actions[control_id]}")
-                self.control_macros[control_id]()
-            else:
+            # Optional debounce to reduce accidental double-triggers/noise
+            if self.note_on_debounce_ms > 0:
+                now = time.monotonic()
+                last = self.last_note_on_time.get(control_id)
+                if last is not None and (now - last) * 1000 < self.note_on_debounce_ms:
+                    if self.debug_midi_messages:
+                        print(f"[MIDI DEBUG] Debounced note_on for control {control_id}")
+                    return
+                self.last_note_on_time[control_id] = now
+
+            if control_id not in self.control_macros:
                 print(f"Trigger: MIDI Control ID# {control_id} -> * UNUSED *")
+                return
+                
+            action = self.control_actions[control_id]
+            hold_enabled = self.control_hold_enabled.get(control_id, False)
+            
+            # Check if this is a special command (RUN|, TYPE|, SOUND|, CONFIG|)
+            is_special_command = action.startswith(("RUN|", "TYPE|", "SOUND|", "CONFIG|"))
+            
+            if is_special_command:
+                # Special commands always fire on press only, ignore hold setting
+                print(f"Trigger: MIDI Control ID# {control_id} -> {action}")
+                self.control_macros[control_id]()
+            elif hold_enabled:
+                # Ignore duplicate note_on events while the same hold key is already active
+                if control_id in self.currently_held_keys:
+                    if self.debug_midi_messages:
+                        print(f"[MIDI DEBUG] Ignoring duplicate hold press for control {control_id}")
+                    return
+                # Hold mode: press the key down and keep it held
+                print(f"Hold Press: MIDI Control ID# {control_id} -> {action}")
+                macros.sendkey(action, mode="press")
+                self.currently_held_keys[control_id] = action
+            else:
+                # Normal mode: send the key (press + release)
+                print(f"Trigger: MIDI Control ID# {control_id} -> {action}")
+                self.control_macros[control_id]()
+        
+        # Button Release: note_off OR note_on with velocity == 0
+        elif msg.type == "note_off" or (msg.type == "note_on" and msg.velocity == 0):
+            if control_id in self.currently_held_keys:
+                action = self.currently_held_keys[control_id]
+                print(f"Hold Release: MIDI Control ID# {control_id} -> {action}")
+                macros.sendkey(action, mode="release")
+                del self.currently_held_keys[control_id]
