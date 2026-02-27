@@ -36,12 +36,16 @@ if !PYTHON_CHECK! neq 0 (
 )
 
 rem Check if required modules are installed
-%PYTHON_CMD% -c "import mido, keyboard, rtmidi, playsound3" >nul 2>&1
+%PYTHON_CMD% -c "import mido, keyboard, rtmidi, playsound3, PIL, png" >nul 2>&1
 set MODULE_ERROR=!ERRORLEVEL!
 if !MODULE_ERROR! neq 0 (
     echo Required Python modules are missing.
     echo .
     echo Please run setup_windows.bat first to set up the environment.
+    echo This now includes Pillow and pypng required for OLED image/text rendering.
+    echo Python executable: %PYTHON_CMD%
+    %PYTHON_CMD% -c "import sys; print(sys.executable)"
+    %PYTHON_CMD% -c "import mido, keyboard, rtmidi, playsound3, PIL, png"
     echo .
     pause
     exit /b 1

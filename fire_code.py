@@ -24,9 +24,32 @@ This module is used by fire-midi-macro-runner.py to provide visual feedback
 on the controller when macros are active.
 """
 
+import json
+import os
 import mido 
 import mido.backends.rtmidi
+from fire_display import (
+    pick_fire_midi_port,
+    show_image_file,
+    show_image_file_on_port_name,
+    show_text_from_font_atlas,
+    show_text_from_font_atlas_on_port_name,
+)
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+def _project_path(*parts):
+    return os.path.join(BASE_DIR, *parts)
+
+
+FONT_1 = _project_path("fonts", "Font08x16.png")
+FONT_2 = _project_path("fonts", "Font09x16_A.png")
+FONT_3 = _project_path("fonts", "Font09x16_B.png")
+FONT_4 = _project_path("fonts", "Font10x20.png")
+FONT_5 = _project_path("fonts", "Font12x16.png")
+
+DEFAULT_FONT = FONT_4
 
 # sysex state def
 MSGID_SET_RGB_PAD_LED_STATE = 0x65
@@ -93,6 +116,13 @@ def init_port(port_name):
     #clear all pads
     clear_pads()
 
+    logo_path = _project_path("images", "fmmr-logo.png")
+    if os.path.exists(logo_path):
+        try:
+            show_image_file(FIRE_PORT, logo_path, threshold=96, invert=False)
+        except Exception as e:
+            print(f"[Display] Could not show startup logo '{logo_path}': {e}")
+
 def clear_pads():
     send_midi_cc(FIRE_PORT, 0x7f, 0x00, channel=0)
     for pad in range(PADSTART, PADEND):
@@ -102,6 +132,98 @@ def close_port():
     global FIRE_PORT
     clear_pads()
     FIRE_PORT.close()
+
+
+def show_image(filepath, threshold=96, invert=False):
+    """
+    Show an image file on the Fire OLED display using the active FIRE_PORT.
+
+    Parameters:
+        filepath (str | pathlib.Path): Path to image file (PNG/JPG/etc.)
+        threshold (int): Grayscale threshold used for 1-bit conversion.
+        invert (bool): Invert image polarity for better OLED visibility.
+
+    Returns:
+        None
+
+    Behavior:
+        - If FIRE_PORT is initialized, uses that active output port.
+        - If FIRE_PORT is not initialized, first tries `midi_config.json`
+          (`device_name`) and falls back to auto-detection.
+    """
+    if FIRE_PORT is not None:
+        show_image_file(FIRE_PORT, filepath, threshold=threshold, invert=invert)
+        return
+
+    port_name = None
+    try:
+        with open(_project_path("midi_config.json"), "r", encoding="utf-8") as f:
+            cfg = json.load(f)
+            saved_name = cfg.get("device_name")
+            if isinstance(saved_name, str) and saved_name.strip():
+                port_name = pick_fire_midi_port(saved_name.strip())
+    except Exception:
+        # If config is missing/invalid, we gracefully fall back to auto-detect.
+        pass
+
+    if port_name is None:
+        port_name = pick_fire_midi_port()
+
+    show_image_file_on_port_name(port_name, filepath, threshold=threshold, invert=invert)
+
+
+def show_text(text, font_path=DEFAULT_FONT, threshold=127, invert=False, include_font_name=False):
+    """
+    Show text on the Fire OLED using a bitmap font atlas.
+
+    Parameters:
+        text (str): Text to render.
+        font_path (str | pathlib.Path): Font atlas path. Defaults to DEFAULT_FONT.
+        threshold (int): Grayscale threshold used for 1-bit conversion.
+        invert (bool): Invert font bitmap polarity.
+        include_font_name (bool): Include font name in preview rendering.
+
+    Returns:
+        None
+
+    Behavior:
+        - If FIRE_PORT is initialized, uses that active output port.
+        - If FIRE_PORT is not initialized, first tries `midi_config.json`
+          (`device_name`) and falls back to auto-detection.
+    """
+    if FIRE_PORT is not None:
+        show_text_from_font_atlas(
+            FIRE_PORT,
+            font_path,
+            text,
+            threshold=threshold,
+            invert=invert,
+            include_font_name=include_font_name,
+        )
+        return
+
+    port_name = None
+    try:
+        with open(_project_path("midi_config.json"), "r", encoding="utf-8") as f:
+            cfg = json.load(f)
+            saved_name = cfg.get("device_name")
+            if isinstance(saved_name, str) and saved_name.strip():
+                port_name = pick_fire_midi_port(saved_name.strip())
+    except Exception:
+        # If config is missing/invalid, we gracefully fall back to auto-detect.
+        pass
+
+    if port_name is None:
+        port_name = pick_fire_midi_port()
+
+    show_text_from_font_atlas_on_port_name(
+        port_name,
+        font_path,
+        text,
+        threshold=threshold,
+        invert=invert,
+        include_font_name=include_font_name,
+    )
     
 def set_mode_buttons(ctrl_id, value):
     if ctrl_id in FOURCOLOR_BUTTONS:

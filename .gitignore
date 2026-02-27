@@ -6,3 +6,4 @@ midi_config.json
 .vscode/settings.json
 .vscode/tasks.json
 default_macros.json
+test_display_text.py

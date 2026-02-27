@@ -53,3 +53,12 @@ def set_pad_color(padIdx, color):
         None
     """
     pass
+
+def close_port():
+    pass
+
+def clear_pads():
+    pass
+
+def show_text(text, font_path=DEFAULT_FONT, threshold=127, invert=False, include_font_name=False):
+    pass

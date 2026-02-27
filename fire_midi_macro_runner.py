@@ -38,6 +38,8 @@ Usage:
 4. Use CONFIG| actions to switch between different configuration files
 """
 
+import os
+import re
 import time
 import mido
 import macros
@@ -127,6 +129,110 @@ def initialize_pad_colors(control_colors):
             set_pad_color(midiId, color)
 
 
+def display_action_text(action_text):
+    """
+    Display macro action text on the Fire OLED (if supported by the active controller module).
+
+    Parameters:
+        action_text (str): Action text to display.
+
+    Returns:
+        None
+    """
+    try:
+        if not hasattr(fc, "show_text"):
+            return
+
+        # Support literal "\\n" in macro text as an OLED newline.
+        normalized_text = str(action_text).replace("\\n", "\n")
+
+        # Use the same explicit rendering parameters as the working test app path.
+        fc.show_text(
+            normalized_text,
+            font_path=getattr(fc, "DEFAULT_FONT", None),
+            threshold=127,
+            invert=False,
+            include_font_name=False,
+        )
+    except Exception as e:
+        print(f"[Display] Could not show action text: {e}")
+
+
+def get_display_text(action):
+    """
+    Build display-friendly text from a macro action string.
+
+    Examples:
+      RUN|C:\\Program Files\\VideoLAN\\VLC\\vlc.exe -> RUN vlc.exe
+      RUN|"C:\\Program Files\\VideoLAN\\VLC\\vlc.exe" --arg -> RUN vlc.exe
+      SOUND|sounds\\air_horn.wav -> SOUND air_horn.wav
+      CONFIG|gaming_macros.json -> CONFIG gaming_macros.json
+      TYPE|hello world -> TYPE hello world
+    """
+    if not isinstance(action, str):
+        return str(action)
+
+    action = action.strip()
+
+    def _first_token(command_text):
+        s = command_text.strip()
+        if not s:
+            return ""
+        if s[0] == '"':
+            end_quote = s.find('"', 1)
+            if end_quote > 0:
+                return s[1:end_quote]
+        return s.split()[0]
+
+    def _extract_run_target(command_text):
+        """
+        Extract command target path from RUN payload.
+
+        Supports:
+        - Quoted commands: "C:\\Path With Spaces\\app.exe" --args
+        - Unquoted paths with spaces that include known executable extensions
+          e.g. C:\\Program Files\\VideoLAN\\VLC\\vlc.exe --arg
+        """
+        s = command_text.strip()
+        if not s:
+            return ""
+
+        if s[0] == '"':
+            end_quote = s.find('"', 1)
+            if end_quote > 0:
+                return s[1:end_quote]
+
+        ext_match = re.match(
+            r"(?i)^(.+?\.(?:exe|bat|cmd|com|ps1|py|lnk|msc))(?:\s|$)",
+            s,
+        )
+        if ext_match:
+            return ext_match.group(1)
+
+        return "" + _first_token(s)
+
+    if action.startswith("RUN|"):
+        payload = action[4:]
+        cmd = _extract_run_target(payload)
+        name = os.path.basename(cmd.replace("\\", "/")) if cmd else ""
+        return f"RUN\n{name}".strip()
+
+    if action.startswith("SOUND|"):
+        payload = action[6:].strip()
+        name = os.path.basename(payload.replace("\\", "/")) if payload else ""
+        return f"SOUND\n{name}".strip()
+
+    if action.startswith("CONFIG|"):
+        payload = action[7:].strip()
+        name = os.path.basename(payload.replace("\\", "/")) if payload else ""
+        return f"CONFIG\n{name}".strip()
+
+    if action.startswith("TYPE|"):
+        return f"TYPE\n{action[5:].strip()}".strip()
+
+    return f"PRESS\n{action}".strip()
+
+
 
 def monitor_device(port_name, runner):
     """
@@ -145,6 +251,10 @@ def monitor_device(port_name, runner):
     with mido.open_input(port_name) as port:  # This is correct despite linting error
         while True:
             for msg in port.iter_pending():
+                if msg.type == "note_on" and msg.velocity > 0 and hasattr(msg, "note"):
+                    action = runner.control_actions.get(msg.note)
+                    if action:
+                        display_action_text(get_display_text(action))
                 runner.handle_message(msg)
             time.sleep(0.01)
 
