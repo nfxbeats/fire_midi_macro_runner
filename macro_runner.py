@@ -53,6 +53,7 @@ class MacroRunner:
         self.control_macros = {}  # Maps MIDI Control IDs to callable functions
         self.control_colors = {}  # Maps MIDI Control IDs to RGB color values
         self.control_actions = {}  # Maps MIDI Control IDs to human-readable action descriptions
+        self.control_display_texts = {}  # Maps MIDI Control IDs to optional OLED display text overrides
         self.control_hold_enabled = {}  # Maps MIDI Control IDs to boolean (whether hold is enabled)
         self.currently_held_keys = {}  # Maps MIDI Control IDs to the keys currently being held
         self.debug_midi_messages = False  # If True, print raw MIDI messages for troubleshooting
@@ -124,7 +125,7 @@ class MacroRunner:
 
         return None
 
-    def build_control_macros(self, cfg: dict) -> Tuple[Dict[int, Callable], Dict[int, int], Dict[int, str]]:
+    def build_control_macros(self, cfg: dict) -> Tuple[Dict[int, Callable], Dict[int, int], Dict[int, str], Dict[int, Optional[str]]]:
         """
         Build mappings between MIDI Control IDs and their associated actions and colors.
         
@@ -132,14 +133,16 @@ class MacroRunner:
             cfg (dict): Configuration dictionary loaded from macros_config.json.
             
         Returns:
-            tuple: A tuple containing three dictionaries:
+            tuple: A tuple containing four dictionaries:
                 - control_macros (dict): Maps MIDI Control IDs to callable functions.
                 - control_colors (dict): Maps MIDI Control IDs to RGB color values.
                 - control_actions (dict): Maps MIDI Control IDs to human-readable action descriptions.
+                - control_display_texts (dict): Maps MIDI Control IDs to optional display text overrides.
         """
         control_macros = {}
         control_colors = {}
         control_actions = {}
+        control_display_texts = {}
         self.control_hold_enabled = {}  # Clear and rebuild hold settings
 
         # Load global default color
@@ -158,6 +161,7 @@ class MacroRunner:
                 action = entry
                 color_int = default_color
                 hold_enabled = False
+                display_text = None
 
             # New style
             elif isinstance(entry, dict):
@@ -168,6 +172,8 @@ class MacroRunner:
                 color_value = entry.get("color")
                 color_int = self.parse_color(color_value) if color_value else default_color
                 hold_enabled = entry.get("hold", False)  # Default to False if not specified
+                display_text_value = entry.get("DisplayText")
+                display_text = str(display_text_value) if display_text_value is not None else None
 
             else:
                 print(f"[Config] Invalid mapping for note {control_str}")
@@ -185,7 +191,10 @@ class MacroRunner:
             # Store hold setting
             self.control_hold_enabled[note] = hold_enabled
 
-        return control_macros, control_colors, control_actions
+            # Store display text override (if provided)
+            control_display_texts[note] = display_text
+
+        return control_macros, control_colors, control_actions, control_display_texts
 
     def load_configuration(self, config_path: str = None) -> bool:
         """
@@ -236,7 +245,7 @@ class MacroRunner:
         self.macros_config_path = macro_config_path
             
         # Build mappings
-        self.control_macros, self.control_colors, self.control_actions = self.build_control_macros(self.macro_cfg)
+        self.control_macros, self.control_colors, self.control_actions, self.control_display_texts = self.build_control_macros(self.macro_cfg)
         return True
 
     def reload_configuration(self, config_path: str) -> Tuple[bool, Dict[int, int]]:
@@ -264,6 +273,7 @@ class MacroRunner:
         old_control_macros = self.control_macros
         old_control_colors = self.control_colors
         old_control_actions = self.control_actions
+        old_control_display_texts = self.control_display_texts
         
         # Try loading the new configuration
         print(f"[Config] Attempting to load configuration from {config_path}")
@@ -275,6 +285,7 @@ class MacroRunner:
             self.control_macros = old_control_macros
             self.control_colors = old_control_colors
             self.control_actions = old_control_actions
+            self.control_display_texts = old_control_display_texts
             return False, old_control_colors
             
         # Update the default config path to the new one if successful

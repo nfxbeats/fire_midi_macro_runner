@@ -23,7 +23,7 @@
     "68": { "action": "f11", "color": "0xA000FF" },
     "69": { "action": "f12", "color": "0xFF00FF" },
 
-    "102": { "action": "RUN|C:/Program Files/VideoLAN/VLC/vlc.exe", "color": "0x00FFFF" },
+    "102": { "action": "RUN|C:/Program Files/VideoLAN/VLC/vlc.exe", "color": "0x00FFFF", "DisplayText": "RUN\nVideo Player" },
     "103": { "action": "RUN|notepad", "color": "0xFF00FF" },
     "104": { "action": "RUN|https://warbeats.com", "color": "0x00FF00" },
     "105": { "action": "TYPE|you@youremail.com", "color": "0xFFFF00" },

@@ -103,7 +103,29 @@ Edit `macros_config.json` to customize your pad mappings. Sample:
 - `default_color`: Sets the default color for all pads with a defined macro (hex format)
 - `control_macros`: Maps MIDI Control ID#s to keyboard shortcuts
   - Simple format: `"MIDI Control ID#": "key_combination"`
-  - Extended format: `"MIDI Control ID#": { "action": "key_combination", "color": "hex_color", "hold": false }`
+  - Extended format: `"MIDI Control ID#": { "action": "key_combination", "color": "hex_color", "hold": false, "DisplayText": "OLED text" }`
+
+#### DisplayText Override
+
+The optional `DisplayText` attribute lets you override what is shown on the Fire OLED when a macro is triggered.
+
+- If `DisplayText` is present, it is shown exactly as provided.
+- If `DisplayText` is not present, the app uses the default output from `get_display_text()`.
+
+Example:
+```json
+{
+  "control_macros": {
+    "70": {
+      "action": "RUN|C:/Program Files/VideoLAN/VLC/vlc.exe",
+      "color": "0x00FFFF",
+      "DisplayText": "Video Player"
+    }
+  }
+}
+```
+
+With this configuration, pressing control ID `70` displays `Video Player` instead of the default derived text.
 
 #### Hold Feature
 

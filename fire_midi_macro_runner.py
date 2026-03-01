@@ -254,7 +254,9 @@ def monitor_device(port_name, runner):
                 if msg.type == "note_on" and msg.velocity > 0 and hasattr(msg, "note"):
                     action = runner.control_actions.get(msg.note)
                     if action:
-                        display_action_text(get_display_text(action))
+                        display_override = runner.control_display_texts.get(msg.note)
+                        display_text = display_override if display_override is not None else get_display_text(action)
+                        display_action_text(display_text)
                 runner.handle_message(msg)
             time.sleep(0.01)
 
